@@ -1,4 +1,4 @@
-## Part 1. Инструмент ipcalc
+## Part 1. Инструмент ipcalc ##
 
 -  Устанавливаем ipcalc
 <img title="title" alt="OS installation screenshot" src="./screens/part1/1.png"><br>
@@ -66,4 +66,56 @@
 - 10.10.100.1 - нет
 - 10.10.1.255 - да
 
-## Part 2. Статическая маршрутизация между двумя машинами
+## Part 2. Статическая маршрутизация между двумя машинами ##
+
+- С помощью команды `ip a` посмотрим существующие сетевые интерфейсы
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.1.png"><br>
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.2.png"><br>
+
+Описать сетевой интерфейс, соответствующий внутренней сети, на обеих машинах и задать следующие адреса и маски: ws1 - 192.168.100.10, маска /16, ws2 - 172.24.116.8, маска /12
+
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.3.png"><br>
+
+Выполним команду `netplan apply` для перезапуска сервиса сети
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.4.png"><br>
+
+### 2.1 Добавление статического маршрута вручную ###
+
+#### Добавь статический маршрут от одной машины до другой и обратно при помощи команды вида `ip r add.` ####
+
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.5.png"><br>
+
+#### Пропингуй соединение между машинами ####
+
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.6.png"><br>
+
+### 2.2 Добавление статического маршрута с сохранением ###
+
+#### Перезапусти машину ####
+
+#### Добавь статический маршрут от одной машины до другой с помощью файла etc/netplan/00-installer-config.yaml. ####
+
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.7.png"><br>
+
+#### Пропингуй соединение между машинами. ####
+
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.8.png"><br>
+
+## Part 3. Утилита iperf3 ##
+
+### 3.1. Скорость соединения ###
+
+#### Переведи и запиши в отчёт: 8 Mbps в MB/s, 100 MB/s в Kbps, 1 Gbps в Mbps. ####
+#### 8 Mbps = (Mbps / 8) = 1 MB/s ####
+#### 100 MB/s = (MB/s * 8 * 1024) = 819200 Kbps ####
+#### 1 Gbps = (Gbps * 1000) = 1000 Mbps #### 
+
+### 3.2. Утилита iperf3 ###
+
+#### Измерь скорость соединения между ws1 и ws2. ####
+
+- На машине ws2 запускаем сервер утилиты ipref3 с помощью команды ipref3 -s, для того чтоб машина принимала входящее соединение.
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.9.png"><br>
+
+- На машине ws1 запускаем клиент утилиты ipref3 для отправки данных на машину ws1 с помощью команды ipref3 -c 172.24.116.8
+<img title="title" alt="OS installation screenshot" src="./screens/part2/2.10.png"><br>
