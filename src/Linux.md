@@ -1,3 +1,8 @@
+1. [Part 1. Инструмент ipcalc](#Part-1.-Инструмент-ipcalc)
+2. [Part 2. Статическая маршрутизация между двумя машинами](#Part-2.-Статическая-маршрутизация-между-двумя-машинами)
+3. [Part 3. Утилита iperf3](#Part-3.-Утилита-iperf3)
+4. [Part 4. Сетевой экран](#Part-4.-Сетевой-экран)
+
 ## Part 1. Инструмент ipcalc ##
 
 -  Устанавливаем ipcalc
@@ -172,3 +177,136 @@ ws21
 
 ws22
 ![linux_network](./screens/part5/5.5.png)
+
+- Перезапустиv сервис сети. Если ошибок нет, командой ip -4 a проверь, что адрес машины задан верно.
+
+ws11
+![linux_network](./screens/part5/5.6.png)
+
+ws21
+![linux_network](./screens/part5/5.7.png)
+
+ws22
+![linux_network](./screens/part5/5.8.png)
+
+r1
+![linux_network](./screens/part5/5.9.png)
+
+r2
+![linux_network](./screens/part5/5.10.png)
+
+пропингуй ws22 с ws21
+![linux_network](./screens/part5/5.11.png)
+
+Аналогично пропингуй r1 с ws11.
+![linux_network](./screens/part5/5.12.png)
+
+### 5.2. Включение переадресации IP-адресов ###
+
+Для включения переадресации IP выполни команду на роутерах:
+`sudo sysctl -w net.ipv4.ip_forward=1`
+
+![linux_network](./screens/part5/5.13.png)
+
+Открыть файл /etc/sysctl.conf и добавить в него следующую строку: `net.ipv4.ip_forward = 1`
+
+![linux_network](./screens/part5/5.14.png)
+
+### 5.3. Установка маршрута по умолчанию ###
+
+Настраиваем маршрут по-умолчанию (шлюз) для рабочих станций. Для этого добавляем gateway4: ip роутера в файле конфигураций etc/netplan/00-installer-config.yaml
+- ws11
+![linux_network](./screens/part5/5.15.png)
+
+- ws21
+![linux_network](./screens/part5/5.16.png)
+
+- ws22
+![linux_network](./screens/part5/5.17.png)
+
+Вызовите ip r и покажите, что маршрут добавлен в таблицу маршрутизации
+
+- ws11
+![linux_network](./screens/part5/5.18.png)
+- ws21
+![linux_network](./screens/part5/5.19.png)
+- ws22
+![linux_network](./screens/part5/5.20.png)
+
+
+Пропинговать с ws11 роутер r2 и показать на r2, что пинг доходит. Для этого использовать команду: `tcpdump -tn -i enp0s9:`
+
+![linux_network](./screens/part5/5.22.png)
+![linux_network](./screens/part5/5.23.png)
+
+### 5.4. Добавление статических маршрутов ###
+
+- Добавь в роутеры r1 и r2 статические маршруты в файле конфигураций. Пример для r1 маршрута в сетку 10.20.0.0/26:
+
+![linux_network](./screens/part5/5.24.png)
+![linux_network](./screens/part5/5.25.png)
+
+- С помощью ip r проверяем настройки на роутерах
+![linux_network](./screens/part5/5.26.png)
+![linux_network](./screens/part5/5.27.png)
+
+- Запустить команды на ws11: `ip r list 10.10.0.0/[маска сети]` и `ip r list 0.0.0.0/0` В отчёт поместить скрин с вызовом и выводом использованных команд:
+![linux_network](./screens/part5/5.28.png)
+
+- Маршрут по умолчанию имеет более низкий приоритет, а для 10.10.0.0/18 был найден подходящий маршрут в таблице маршрутизации, соответственно и был использован
+
+### 5.5. Построение списка маршрутизаторов ###
+
+- Запустить на r1 команду дампа: tcpdump -tnv -i enp0s9
+![linux_network](./screens/part5/5.29.png)
+
+- При помощи утилиты traceroute построить список маршрутизаторов на пути от ws11 до ws21:
+![linux_network](./screens/part5/5.30.png)
+
+Traceroute работает, отправляя UDP-пакеты с увеличивающимся TTL и фиксируя ICMP-ответы "Time Exceeded" от маршрутизаторов. По скрину видно, что пакеты отправляются от 10.10.0.2 к 10.20.0.10, но обрываются на 10.10.0.1, который отправляет ICMP-ответ. Это говорит о том, что маршрутизация дальше либо отсутствует, либо трафик фильтруется. Traceroute помогает определить этот маршрут.
+
+### 5.6. Использование протокола ICMP при маршрутизации ###
+
+- Запусти на r1 перехват сетевого трафика, проходящего через eth0 с помощью команды: `tcpdump -n -i eth0 icmp`
+
+- Пропинговать с ws11 несуществующий IP (например, 10.30.0.111) с помощью команды: `ping -c 1 10.30.0.111`
+![linux_network](./screens/part5/5.31.png)
+![linux_network](./screens/part5/5.32.png)
+
+## Part 6. Динамическая настройка IP с помощью DHCP ##
+
+- Для r2 настрой в файле /etc/dhcp/dhcpd.conf конфигурацию службы DHCP:
+ 1. Укажи адрес маршрутизатора по умолчанию, DNS-сервер и адрес внутренней сети.
+ ![linux_network](./screens/part6/6.1.png)
+
+ 2. В файле resolv.conf пропиши nameserver 8.8.8.8.
+  ![linux_network](./screens/part6/6.2.png)
+
+  - Перезагрузи службу DHCP командой `systemctl restart isc-dhcp-server`.
+  ![linux_network](./screens/part6/6.3.png)
+
+  - Машину ws21 перезагрузить при помощи reboot и через ip a показать, что она получила адрес. Также пропинговать ws22 с ws21.
+  ![linux_network](./screens/part6/6.4.png)
+  ![linux_network](./screens/part6/6.5.png)
+
+  - Укажи MAC-адрес у ws11, для этого в etc/netplan/00-installer-config.yaml надо добавить строки: macaddress: 10:10:10:10:10:BA, dhcp4: true.
+  ![linux_network](./screens/part6/6.6.png)
+
+  - Для r1 настрой аналогично r2, но сделай выдачу адресов с жесткой привязкой к MAC-адресу (ws11). Проведи аналогичные тесты.
+  ![linux_network](./screens/part6/6.7.png)
+  ![linux_network](./screens/part6/6.8.png)
+  ![linux_network](./screens/part6/6.9.png)
+
+  - Укажи MAC-адрес у ws11, для этого в etc/netplan/00-installer-config.yaml надо добавить строки: macaddress: 10:10:10:10:10:BA, dhcp4: true.
+  ![linux_network](./screens/part6/6.6.png)
+  ![linux_network](./screens/part6/6.4.png)
+  ![linux_network](./screens/part6/6.10.png)
+
+  - Запроси с ws21 обновление IP-адреса.
+  `ip a`
+  ![linux_network](./screens/part6/6.12.png)
+  ![linux_network](./screens/part6/6.13.png)
+
+  Пользовался опциями:
+  `-r: Очистка IP-адреса`
+  `-v: Показ подробного вывода`
