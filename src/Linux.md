@@ -308,5 +308,59 @@ Traceroute работает, отправляя UDP-пакеты с увелич
   ![linux_network](./screens/part6/6.13.png)
 
   Пользовался опциями:
-  `-r: Очистка IP-адреса`
-  `-v: Показ подробного вывода`
+  - `-r: Очистка IP-адреса`
+  - `-v: Показ подробного вывода`
+
+## Part 7. NAT ##
+
+В файле /etc/apache2/ports.conf на ws22 и r1 измени строку Listen 80 на Listen 0.0.0.0:80, то есть сделай сервер Apache2 общедоступным.
+
+![linux_network](./screens/part7/7.1.png)
+![linux_network](./screens/part7/7.2.png)
+
+Запусти веб-сервер Apache командой `service apache2 start` на ws22 и r1.
+![linux_network](./screens/part7/7.3.png)
+![linux_network](./screens/part7/7.4.png)
+
+- Добавь в фаервол, созданный по аналогии с фаерволом из Части 4, на r2 следующие правила:
+- 1. Удаление правил в таблице filter - `iptables -F`;
+- 2. Удаление правил в таблице «NAT» — `iptables -F -t nat`;
+- 3. Отбрасывать все маршрутизируемые пакеты — `iptables --policy FORWARD DROP`.
+![linux_network](./screens/part7/7.5.png)
+
+- Проверь соединение между ws22 и r1 командой ping.
+![linux_network](./screens/part7/7.6.png)
+
+- 4. Разрешить маршрутизацию всех пакетов протокола ICMP.
+![linux_network](./screens/part7/7.7.png)
+  - Проверь соединение между ws22 и r1 командой ping
+  ![linux_network](./screens/part7/7.8.png)
+
+- 5. Включи SNAT, а именно маскирование всех локальных IPиз локальной сети, находящейся за r2 (по обозначениям из Части 5 — сеть 10.20.0.0).
+- 6. Включи DNAT на 8080 порт машины r2 и добавить к веб-серверу Apache, запущенному на ws22, доступ извне сети.
+![linux_network](./screens/part7/7.9.png)
+
+- Запусти файл также, как в Части 4.
+
+- Проверь соединение по TCP для SNAT: для этого с ws22 подключиться к серверу Apache на r1 командой:
+telnet [адрес] [порт]
+- ![linux_network](./screens/part7/7.10.png)
+
+- Проверь соединение по TCP для DNAT: для этого с r1 подключиться к серверу Apache на ws22 командой telnet (обращаться по адресу r2 и порту 8080).
+
+- ![linux_network](./screens/part7/7.11.png)
+
+
+## PART 8. Дополнительно. Знакомство с SSH Tunnels ##
+
+> **Запустить на r2 файервол с правилами из Части 7**  
+>  
+> **Запустить веб-сервер Apache на ws22 только на localhost (то есть в файле /etc/apache2/ports.conf изменить строку Listen 80 на Listen localhost:80)**  
+
+![linux_network](./screens/part8/8.1.png)
+
+> **Воспользоваться Local TCP forwarding с ws21 до ws22, чтобы получить доступ к веб-серверу на ws22 с ws21**
+
+> **Воспользоваться Remote TCP forwarding c ws11 до ws22, чтобы получить доступ к веб-серверу на ws22 с ws11**
+![linux_network](./screens/part8/8.2.png)
+![linux_network](./screens/part8/8.2.png)
